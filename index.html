@@ -451,7 +451,7 @@
   <div class="plans-grid">
 
     <!-- Plan 24 Horas -->
-    <div class="plan-card" data-plan="24h" data-amount="35000" data-name="Plan 24 Horas" data-period="Por 24 horas" data-payment-type="one_time" onclick="selectPlan(this)">
+    <div class="plan-card" data-plan="24h" data-amount="35000" data-name="Plan 24 Horas" data-period="Por 24 horas" data-payment-type="subscription" onclick="selectPlan(this)">
       <div class="plan-card-top">
         <div class="plan-name">Plan 24 horas</div>
         <div class="plan-price">$35.000 COP</div>
@@ -600,8 +600,8 @@ const CONFIG = {
   WEBHOOK_URL: "https://clientes-id-n8n-tinyroots.zqc03m.easypanel.host/webhook/crear-suscripcion",
 
   // IDs de los planes de SUSCRIPCIÓN creados en Mercado Pago
-  // Solo mensual y anual (el plan 24h es pago único, no necesita ID de plan)
   PLAN_IDS: {
+    "24h":     "f65af08cea6e4b95872e279d07c13b05",
     "mensual": "a8073b454dc94e2d8a6b86f8313d8536",
     "anual":   "5cac91e971154a809707cc3011463162"
   }
