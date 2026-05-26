@@ -1,1 +1,805 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloomy — Planes y Membresías</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --text: #1a1a2e;
+    --text-muted: #6b6b80;
+    --card-bg: #ffffff;
+    --border: #e8e8ee;
+    --plan-blue: #0077CC;
+    --plan-blue-light: #E3F2FD;
+    --plan-blue-bg: #d6eeff;
+    --plan-pink: #E91E72;
+    --plan-pink-light: #FDE4EF;
+    --plan-pink-bg: #fce4ef;
+    --plan-green: #2E9B50;
+    --plan-green-light: #E8F5E9;
+    --plan-green-bg: #e1f5e1;
+    --accent: #E91E72;
+    --success: #2E9B50;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
+    --shadow-hover: 0 8px 40px rgba(0,0,0,0.12);
+  }
 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    padding: 48px 24px 12px;
+  }
+  .header .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--plan-pink), var(--plan-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+  }
+  .header .tagline {
+    margin-top: 8px;
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+
+  /* ── PLANS GRID ── */
+  .plans-section {
+    max-width: 960px;
+    margin: 32px auto 0;
+    padding: 0 20px 40px;
+  }
+  .plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 768px) {
+    .plans-grid {
+      grid-template-columns: 1fr;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
+
+  /* ── PLAN CARD ── */
+  .plan-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 2px solid var(--border);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    cursor: pointer;
+  }
+  .plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+  .plan-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(233,30,114,0.15), var(--shadow-hover);
+    transform: translateY(-4px);
+  }
+
+  .plan-card-top {
+    padding: 28px 24px 20px;
+    text-align: center;
+  }
+  .plan-card[data-plan="24h"] .plan-card-top { background: var(--plan-blue-bg); }
+  .plan-card[data-plan="mensual"] .plan-card-top { background: var(--plan-pink-bg); }
+  .plan-card[data-plan="anual"] .plan-card-top { background: var(--plan-green-bg); }
+
+  .plan-badge {
+    position: absolute;
+    top: 16px;
+    right: -32px;
+    transform: rotate(45deg);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 4px 40px;
+    color: #fff;
+  }
+  .plan-card[data-plan="mensual"] .plan-badge { background: var(--plan-pink); }
+  .plan-card[data-plan="anual"] .plan-badge { background: var(--plan-green); }
+
+  .plan-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .plan-card[data-plan="24h"] .plan-name { color: var(--plan-blue); }
+  .plan-card[data-plan="mensual"] .plan-name { color: var(--plan-pink); }
+  .plan-card[data-plan="anual"] .plan-name { color: var(--plan-green); }
+
+  .plan-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .plan-period {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .plan-cta {
+    display: block;
+    width: calc(100% - 48px);
+    margin: 16px 24px 0;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .plan-cta:hover { opacity: 0.88; }
+  .plan-card[data-plan="24h"] .plan-cta { background: var(--plan-blue); }
+  .plan-card[data-plan="mensual"] .plan-cta { background: var(--plan-pink); }
+  .plan-card[data-plan="anual"] .plan-cta { background: var(--plan-green); }
+
+  .plan-features {
+    padding: 20px 24px 24px;
+    list-style: none;
+  }
+  .plan-features li {
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .plan-features li::before {
+    content: "✓";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .plan-card[data-plan="24h"] .plan-features li::before { background: var(--plan-blue); }
+  .plan-card[data-plan="mensual"] .plan-features li::before { background: var(--plan-pink); }
+  .plan-card[data-plan="anual"] .plan-features li::before { background: var(--plan-green); }
+
+  /* ── CHECKOUT MODAL ── */
+  .checkout-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  }
+  .checkout-overlay.active { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .checkout-modal {
+    background: var(--card-bg);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: slideUp 0.35s ease;
+  }
+  .checkout-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .checkout-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .checkout-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .checkout-close:hover { background: var(--border); }
+
+  .checkout-plan-summary {
+    margin: 16px 24px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: var(--bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .checkout-plan-summary .cps-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .checkout-plan-summary .cps-price {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .checkout-body { padding: 0 24px 24px; }
+
+  /* ── FORM FIELDS ── */
+  .field-group {
+    margin-bottom: 14px;
+  }
+  .field-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field-group input,
+  .field-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .field-group input:focus,
+  .field-group select:focus {
+    border-color: var(--accent);
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* MP secure iframes containers */
+  .mp-field-container {
+    height: 44px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 2px 10px;
+    transition: border-color 0.2s;
+    background: #fff;
+  }
+  .mp-field-container:focus-within {
+    border-color: var(--accent);
+  }
+
+  .btn-pay {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+  }
+  .btn-pay:hover { opacity: 0.9; }
+  .btn-pay:active { transform: scale(0.98); }
+  .btn-pay:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-pay .spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    margin-top: -9px;
+  }
+  .btn-pay.loading .spinner { display: block; }
+  .btn-pay.loading .btn-text { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── STATUS MESSAGES ── */
+  .status-msg {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+  }
+  .status-msg.error {
+    display: block;
+    background: #FDE8E8;
+    color: #C62828;
+    border: 1px solid #F5C6C6;
+  }
+  .status-msg.success {
+    display: block;
+    background: #E8F5E9;
+    color: #2E7D32;
+    border: 1px solid #A5D6A7;
+  }
+
+  /* ── SUCCESS SCREEN ── */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .success-screen.active { display: block; }
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--success);
+    color: #fff;
+    font-size: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .success-screen h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .success-screen p {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── SECURE BADGE ── */
+  .secure-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .secure-badge svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--text-muted);
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<div class="header">
+  <div class="logo">Bloomy</div>
+  <p class="tagline">Tu asistente de crianza con inteligencia artificial. Elige el plan ideal para tu familia.</p>
+</div>
+
+<!-- ═══════ PLANS ═══════ -->
+<section class="plans-section">
+  <div class="plans-grid">
+
+    <!-- Plan 24 Horas -->
+    <div class="plan-card" data-plan="24h" data-amount="35000" data-name="Plan 24 Horas" data-period="Por 24 horas" data-payment-type="one_time" onclick="selectPlan(this)">
+      <div class="plan-card-top">
+        <div class="plan-name">Plan 24 horas</div>
+        <div class="plan-price">$35.000 COP</div>
+        <div class="plan-period">Por 24 horas</div>
+      </div>
+      <button class="plan-cta">Comprar plan</button>
+      <ul class="plan-features">
+        <li>Acceso total por 24 horas</li>
+        <li>Chat ilimitado con Bloomy</li>
+        <li>Todas las lecciones abiertas</li>
+      </ul>
+    </div>
+
+    <!-- Membresía Mensual -->
+    <div class="plan-card" data-plan="mensual" data-amount="45000" data-name="Membresía Mensual" data-period="Cada mes" data-payment-type="subscription" onclick="selectPlan(this)">
+      <span class="plan-badge">Popular</span>
+      <div class="plan-card-top">
+        <div class="plan-name">Membresía mensual</div>
+        <div class="plan-price">$45.000 COP</div>
+        <div class="plan-period">Cada mes</div>
+      </div>
+      <button class="plan-cta">Inscríbete</button>
+      <ul class="plan-features">
+        <li>Acceso ilimitado mes a mes</li>
+        <li>Bloomy Premium (IA avanzada)</li>
+        <li>Reportes detallados de progreso</li>
+        <li>Renovación automática</li>
+      </ul>
+    </div>
+
+    <!-- Membresía Anual -->
+    <div class="plan-card" data-plan="anual" data-amount="450000" data-name="Membresía Anual" data-period="Cada 12 meses" data-payment-type="subscription" onclick="selectPlan(this)">
+      <span class="plan-badge">Nuevo</span>
+      <div class="plan-card-top">
+        <div class="plan-name">Membresía anual</div>
+        <div class="plan-price">$450.000 COP</div>
+        <div class="plan-period">Cada 12 meses</div>
+      </div>
+      <button class="plan-cta">Inscríbete</button>
+      <ul class="plan-features">
+        <li>Acceso ilimitado por 1 año</li>
+        <li>Ahorra 2 meses de suscripción</li>
+        <li>Todo el contenido premium incluido</li>
+        <li>Renovación automática</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════ CHECKOUT MODAL ═══════ -->
+<div class="checkout-overlay" id="checkoutOverlay">
+  <div class="checkout-modal">
+    <div class="checkout-header">
+      <h2>Datos de pago</h2>
+      <button class="checkout-close" onclick="closeCheckout()">✕</button>
+    </div>
+
+    <!-- Plan summary -->
+    <div class="checkout-plan-summary">
+      <span class="cps-name" id="summaryPlanName">—</span>
+      <span class="cps-price" id="summaryPlanPrice">—</span>
+    </div>
+
+    <!-- Payment form -->
+    <div class="checkout-body" id="checkoutBody">
+      <form id="form-checkout" novalidate>
+
+        <div class="field-group">
+          <label>Número de tarjeta</label>
+          <div id="form-checkout__cardNumber" class="mp-field-container"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Vencimiento</label>
+            <div id="form-checkout__expirationDate" class="mp-field-container"></div>
+          </div>
+          <div class="field-group">
+            <label>CVV</label>
+            <div id="form-checkout__securityCode" class="mp-field-container"></div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Nombre en la tarjeta</label>
+          <input type="text" id="form-checkout__cardholderName" placeholder="Como aparece en la tarjeta" autocomplete="cc-name">
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Tipo de documento</label>
+            <select id="form-checkout__identificationType"></select>
+          </div>
+          <div class="field-group">
+            <label>Número de documento</label>
+            <input type="text" id="form-checkout__identificationNumber" placeholder="Ej: 1234567890" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Email</label>
+          <input type="email" id="form-checkout__cardholderEmail" placeholder="tu@email.com" autocomplete="email">
+        </div>
+
+        <!-- Hidden fields MP needs -->
+        <select id="form-checkout__issuer" style="display:none"></select>
+        <select id="form-checkout__installments" style="display:none"></select>
+
+        <button type="submit" class="btn-pay" id="btnPay">
+          <span class="btn-text">Pagar ahora</span>
+          <span class="spinner"></span>
+        </button>
+
+        <div class="status-msg" id="statusMsg"></div>
+
+        <div class="secure-badge">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+          Pago seguro procesado por Mercado Pago
+        </div>
+      </form>
+    </div>
+
+    <!-- Success screen (replaces form) -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✓</div>
+      <h3>¡Suscripción activada!</h3>
+      <p>Tu membresía ya está activa. Revisa tu email para los detalles de acceso.</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Bloomy © 2026 — Todos los derechos reservados</div>
+
+<!-- ═══════ JAVASCRIPT ═══════ -->
+<script>
+// ╔══════════════════════════════════════════════╗
+// ║  CONFIGURACIÓN — EDITA ESTOS VALORES         ║
+// ╚══════════════════════════════════════════════╝
+
+const CONFIG = {
+  // Tu Public Key de Mercado Pago (la de TEST para pruebas, la de producción para el sitio real)
+  MP_PUBLIC_KEY: "APP_USR-998efdf8-2038-4403-88f7-3f077dc8a8c4",
+
+  // URL del webhook de n8n que recibirá el token y procesará el pago
+  WEBHOOK_URL: "https://clientes-id-n8n-tinyroots.zqc03m.easypanel.host/webhook/crear-suscripcion",
+
+  // IDs de los planes de SUSCRIPCIÓN creados en Mercado Pago
+  // Solo mensual y anual (el plan 24h es pago único, no necesita ID de plan)
+  PLAN_IDS: {
+    "mensual": "a8073b454dc94e2d8a6b86f8313d8536",
+    "anual":   "5cac91e971154a809707cc3011463162"
+  }
+};
+
+// ╔══════════════════════════════════════════════╗
+// ║  LÓGICA — NO NECESITAS EDITAR ABAJO          ║
+// ╚══════════════════════════════════════════════╝
+
+let selectedPlan = null;
+let cardForm = null;
+
+// Initialize MercadoPago SDK
+const mp = new MercadoPago(CONFIG.MP_PUBLIC_KEY);
+
+function selectPlan(cardEl) {
+  // Remove previous selection
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  cardEl.classList.add('selected');
+
+  // Store plan data (including payment type)
+  const paymentType = cardEl.dataset.paymentType || "subscription";
+
+  selectedPlan = {
+    key: cardEl.dataset.plan,
+    amount: cardEl.dataset.amount,
+    name: cardEl.dataset.name,
+    period: cardEl.dataset.period,
+    paymentType: paymentType,
+    planId: paymentType === "subscription" ? CONFIG.PLAN_IDS[cardEl.dataset.plan] : null
+  };
+
+  // Update modal summary
+  document.getElementById('summaryPlanName').textContent = selectedPlan.name;
+  document.getElementById('summaryPlanPrice').textContent = `$${Number(selectedPlan.amount).toLocaleString('es-CO')} COP`;
+
+  // Open checkout
+  openCheckout();
+}
+
+function openCheckout() {
+  const overlay = document.getElementById('checkoutOverlay');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Reset states
+  document.getElementById('checkoutBody').style.display = 'block';
+  document.getElementById('successScreen').classList.remove('active');
+  hideStatus();
+
+  // Initialize CardForm (destroy previous if exists)
+  if (cardForm) {
+    try { cardForm.unmount(); } catch(e) {}
+  }
+
+  setTimeout(() => initCardForm(), 100);
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Close on overlay click (not modal)
+document.getElementById('checkoutOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeCheckout();
+});
+
+function initCardForm() {
+  cardForm = mp.cardForm({
+    amount: String(selectedPlan.amount),
+    iframe: true,
+    form: {
+      id: "form-checkout",
+      cardNumber: {
+        id: "form-checkout__cardNumber",
+        placeholder: "4013 5406 8274 6260",
+      },
+      expirationDate: {
+        id: "form-checkout__expirationDate",
+        placeholder: "MM/AA",
+      },
+      securityCode: {
+        id: "form-checkout__securityCode",
+        placeholder: "123",
+      },
+      cardholderName: {
+        id: "form-checkout__cardholderName",
+        placeholder: "Nombre en la tarjeta",
+      },
+      issuer: {
+        id: "form-checkout__issuer",
+        placeholder: "Banco emisor",
+      },
+      installments: {
+        id: "form-checkout__installments",
+        placeholder: "Cuotas",
+      },
+      identificationType: {
+        id: "form-checkout__identificationType",
+        placeholder: "Tipo de documento",
+      },
+      identificationNumber: {
+        id: "form-checkout__identificationNumber",
+        placeholder: "Número de documento",
+      },
+      cardholderEmail: {
+        id: "form-checkout__cardholderEmail",
+        placeholder: "tu@email.com",
+      },
+    },
+    callbacks: {
+      onFormMounted: error => {
+        if (error) {
+          console.warn("CardForm mount error:", error);
+          showStatus("Error cargando el formulario de pago. Recarga la página.", "error");
+        }
+      },
+      onSubmit: event => {
+        event.preventDefault();
+        processPayment();
+      },
+      onFetching: resource => {
+        console.log("Fetching:", resource);
+      }
+    },
+  });
+}
+
+async function processPayment() {
+  const btn = document.getElementById('btnPay');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  hideStatus();
+
+  try {
+    const formData = cardForm.getCardFormData();
+
+    if (!formData.token) {
+      throw new Error("No se pudo generar el token de la tarjeta. Verifica los datos.");
+    }
+
+    // Send token + plan info to n8n webhook
+    const payload = {
+      card_token_id: formData.token,
+      payer_email: formData.cardholderEmail,
+      plan_key: selectedPlan.key,
+      plan_name: selectedPlan.name,
+      amount: selectedPlan.amount,
+      payment_type: selectedPlan.paymentType,
+      identification_type: formData.identificationType,
+      identification_number: formData.identificationNumber,
+      cardholder_name: formData.cardholderName,
+      payment_method_id: formData.paymentMethodId,
+      issuer_id: formData.issuerId,
+      installments: Number(formData.installments) || 1
+    };
+
+    // Solo incluir plan_id si es suscripción
+    if (selectedPlan.paymentType === "subscription") {
+      payload.plan_id = selectedPlan.planId;
+    }
+
+    const response = await fetch(CONFIG.WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+
+    if (result.status === "authorized" || result.status === "approved" || result.success) {
+      // Show success screen
+      document.getElementById('checkoutBody').style.display = 'none';
+      document.getElementById('successScreen').classList.add('active');
+    } else {
+      throw new Error(result.message || "El pago fue rechazado. Intenta con otra tarjeta.");
+    }
+
+  } catch (err) {
+    showStatus(err.message || "Error procesando el pago. Intenta de nuevo.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+}
+function hideStatus() {
+  const el = document.getElementById('statusMsg');
+  el.className = 'status-msg';
+  el.textContent = '';
+}
+</script>
+
+</body>
+</html>
