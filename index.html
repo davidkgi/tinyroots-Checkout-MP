@@ -443,7 +443,7 @@
 <!-- ═══════ HEADER ═══════ -->
 <div class="header">
   <div class="logo">Bloomy</div>
-  <p class="tagline"> Elige el plan que mejor se adapte a ti.</p>
+  <p class="tagline">Tu asistente de crianza con inteligencia artificial. Elige el plan ideal para tu familia.</p>
 </div>
 
 <!-- ═══════ PLANS ═══════ -->
@@ -451,7 +451,7 @@
   <div class="plans-grid">
 
     <!-- Plan 24 Horas -->
-    <div class="plan-card" data-plan="24h" data-amount="35000" data-name="Plan 24 Horas" data-period="Por 24 horas" onclick="selectPlan(this)">
+    <div class="plan-card" data-plan="24h" data-amount="35000" data-name="Plan 24 Horas" data-period="Por 24 horas" data-payment-type="one_time" onclick="selectPlan(this)">
       <div class="plan-card-top">
         <div class="plan-name">Plan 24 horas</div>
         <div class="plan-price">$35.000 COP</div>
@@ -466,7 +466,7 @@
     </div>
 
     <!-- Membresía Mensual -->
-    <div class="plan-card" data-plan="mensual" data-amount="45000" data-name="Membresía Mensual" data-period="Cada mes" onclick="selectPlan(this)">
+    <div class="plan-card" data-plan="mensual" data-amount="45000" data-name="Membresía Mensual" data-period="Cada mes" data-payment-type="subscription" onclick="selectPlan(this)">
       <span class="plan-badge">Popular</span>
       <div class="plan-card-top">
         <div class="plan-name">Membresía mensual</div>
@@ -483,7 +483,7 @@
     </div>
 
     <!-- Membresía Anual -->
-    <div class="plan-card" data-plan="anual" data-amount="450000" data-name="Membresía Anual" data-period="Cada 12 meses" onclick="selectPlan(this)">
+    <div class="plan-card" data-plan="anual" data-amount="450000" data-name="Membresía Anual" data-period="Cada 12 meses" data-payment-type="subscription" onclick="selectPlan(this)">
       <span class="plan-badge">Nuevo</span>
       <div class="plan-card-top">
         <div class="plan-name">Membresía anual</div>
@@ -596,13 +596,12 @@ const CONFIG = {
   // Tu Public Key de Mercado Pago (la de TEST para pruebas, la de producción para el sitio real)
   MP_PUBLIC_KEY: "TEST-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 
-  // URL del webhook de n8n que recibirá el token y creará la suscripción
+  // URL del webhook de n8n que recibirá el token y procesará el pago
   WEBHOOK_URL: "https://TU-N8N.com/webhook/crear-suscripcion",
 
-  // IDs de los planes de suscripción creados en Mercado Pago
-  // Los obtienes de la respuesta de tu flujo "crear plan mercadopago"
+  // IDs de los planes de SUSCRIPCIÓN creados en Mercado Pago
+  // Solo mensual y anual (el plan 24h es pago único, no necesita ID de plan)
   PLAN_IDS: {
-    "24h":     "PLAN_ID_24_HORAS",
     "mensual": "PLAN_ID_MENSUAL",
     "anual":   "PLAN_ID_ANUAL"
   }
@@ -623,13 +622,16 @@ function selectPlan(cardEl) {
   document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
   cardEl.classList.add('selected');
 
-  // Store plan data
+  // Store plan data (including payment type)
+  const paymentType = cardEl.dataset.paymentType || "subscription";
+
   selectedPlan = {
     key: cardEl.dataset.plan,
     amount: cardEl.dataset.amount,
     name: cardEl.dataset.name,
     period: cardEl.dataset.period,
-    planId: CONFIG.PLAN_IDS[cardEl.dataset.plan]
+    paymentType: paymentType,
+    planId: paymentType === "subscription" ? CONFIG.PLAN_IDS[cardEl.dataset.plan] : null
   };
 
   // Update modal summary
@@ -743,25 +745,35 @@ async function processPayment() {
     }
 
     // Send token + plan info to n8n webhook
+    const payload = {
+      card_token_id: formData.token,
+      payer_email: formData.cardholderEmail,
+      plan_key: selectedPlan.key,
+      plan_name: selectedPlan.name,
+      amount: selectedPlan.amount,
+      payment_type: selectedPlan.paymentType,
+      identification_type: formData.identificationType,
+      identification_number: formData.identificationNumber,
+      cardholder_name: formData.cardholderName,
+      payment_method_id: formData.paymentMethodId,
+      issuer_id: formData.issuerId,
+      installments: Number(formData.installments) || 1
+    };
+
+    // Solo incluir plan_id si es suscripción
+    if (selectedPlan.paymentType === "subscription") {
+      payload.plan_id = selectedPlan.planId;
+    }
+
     const response = await fetch(CONFIG.WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        card_token_id: formData.token,
-        payer_email: formData.cardholderEmail,
-        plan_id: selectedPlan.planId,
-        plan_key: selectedPlan.key,
-        plan_name: selectedPlan.name,
-        amount: selectedPlan.amount,
-        identification_type: formData.identificationType,
-        identification_number: formData.identificationNumber,
-        cardholder_name: formData.cardholderName
-      })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
 
-    if (result.status === "authorized" || result.success) {
+    if (result.status === "authorized" || result.status === "approved" || result.success) {
       // Show success screen
       document.getElementById('checkoutBody').style.display = 'none';
       document.getElementById('successScreen').classList.add('active');
