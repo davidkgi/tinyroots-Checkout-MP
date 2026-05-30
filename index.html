@@ -788,6 +788,7 @@ async function processPayment() {
     }
 
   } catch (err) {
+    alert("Error: " + (err.message || "desconocido"));
     showStatus(err.message || "Error procesando el pago. Intenta de nuevo.", "error");
   } finally {
     btn.disabled = false;
