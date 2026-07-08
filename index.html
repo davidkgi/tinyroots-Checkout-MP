@@ -593,17 +593,17 @@
 // ╚══════════════════════════════════════════════╝
 
 const CONFIG = {
-  // Tu Public Key de Mercado Pago (la de TEST para pruebas, la de producción para el sitio real)
+  // Tu Public Key de Mercado Pago
   MP_PUBLIC_KEY: "APP_USR-3b717fa2-2fb8-4cc3-9759-693403ee79af",
 
-  // URL del webhook de n8n que recibirá el token y procesará el pago
+  // URL del webhook de n8n
   WEBHOOK_URL: "https://app.n8n.tinyroots.com.co/webhook/procesarpagosplanesbloomy",
 
   // IDs de los planes de SUSCRIPCIÓN creados en Mercado Pago
   PLAN_IDS: {
-    "24h":     "f65af08cea6e4b95872e279d07c13b05",
-    "mensual": "a8073b454dc94e2d8a6b86f8313d8536",
-    "anual":   "5cac91e971154a809707cc3011463162"
+    "24h":     "3309c9d17cc5425988565ac5493d36cc", // Plan 24 Horas
+    "mensual": "67d9a2fbf5ad45168bf1d417f7f3cf20", // Plan Membresía Mensual
+    "anual":   "5651223827024ccf8ac721361094f7c9"  // Plan Menbresía Anual
   }
 };
 
